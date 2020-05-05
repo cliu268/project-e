@@ -1,2 +1,2 @@
 # project-e
-Stand up project for talking to E
+Stand up project for talking to E!
