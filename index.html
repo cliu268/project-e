@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+ <body>
+  <h1><p>Random Shit Generator</p></h1>
+  <button onclick="myshitter()">hit me up</button>
+  <p id="demo"></p>
+  <script>
+  function myshitter() {
+      alert("SHITTING");
+      let r=window.confirm("Eat your own shit!\nEither OK or Cancel.");
+      if (r) {
+          let random = 1+Math.floor(Math.random() * 10);
+          let innerDoc = "";
+          for (i = 0; i < random; i++) {
+              innerDoc += "<h1><li><img src='http://www.clker.com/cliparts/9/T/s/m/i/z/new-turd-hi.png' height=100 width=100></li></h1>"; 
+          }
+          document.getElementById("demo").innerHTML = innerDoc;
+      } else {
+          document.getElementById("demo").innerHTML = "<h1>hahahaha still EAT MY SHIT!!!</h1>";
+      }
+  }
+  </script>
+ </body>
+</html>
