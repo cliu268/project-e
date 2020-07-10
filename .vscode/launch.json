@@ -5,9 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Calculator",
+            "request": "launch",
+            "type": "pwa-chrome",
+            "url": "http://127.0.0.1:5501/cal.html",
+            "webRoot": "${workspaceFolder}"
+        },
+
+        {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
+            "name": "Launch Default",
             "url": "http://127.0.0.1:5501/index.html",
             "webRoot": "${workspaceFolder}"
         }
