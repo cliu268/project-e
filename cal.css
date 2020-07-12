@@ -2,25 +2,40 @@ body {
     background-color: rgb(135, 255, 124);
 }
 #Output {
-    background-color: white;
-    width: 330px;
-    padding: 25px;
+    text-align: right;
+    font-family: Helvetica;
+    font-size: 100px;
+    color: white;
+    background-color: black;
+    width: 380px;
+    height: 100px;
+    padding: 25px 55px 0px 55px;
     border: 5px solid black;
-    margin: 5px;
+    margin: 5px 5px 0px 5px;
 }
 #Keyboard {
-    background-color: blueviolet;
-    width: 330px;
-    padding: 25px;
+    background-color: black;
+    width: 440px;
+    padding: 0px 25px 25px 25px;
     border: 5px solid black;
-    margin: 5px;
+    margin: 0px 5px 5px 5px;
 }
 button {
     text-align: center;
     text-size-adjust: auto;
-    font-size: larger;
+    font-size: xx-large;
+    color: white;
+    background-color: rgb(29, 28, 28);    
+    height: 100px;
     width: 100px;
     padding: 10px;
     border: 2px solid black;
+    border-radius: 50%;
     margin: 5px
+}
+.top {
+    background-color: gray;
+}
+.right {
+    background-color: darkorange;
 }
