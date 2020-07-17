@@ -1,41 +1,95 @@
 let currentValue = 0;
+let operand = 0;
 
-function hit(clicked_id) {
+function printResult() {
     let el = document.getElementById("Output");
-    let oldValue = currentValue;
-    currentValue = currentValue * 10 + parseInt(clicked_id);   
-    let outputString = currentValue.toLocaleString(); 
-    if (outputString.length >= 12) {
-        currentValue = oldValue;
-        outputString = currentValue.toLocaleString();        
-    }
+    let outputString = Number(currentValue).toLocaleString('en-US', {maximumFractionDigits: 20}); 
     el.innerHTML = outputString;
     if (outputString.length <= 7) {
         el.style.fontSize = "100px";
-        //el.style.paddingTop = "0px";
     } else if (outputString.length === 8) {
         el.style.fontSize = "80px";
-        //el.style.paddingTop = "10px";
     } else if (outputString.length === 9) {
         el.style.fontSize = "80px";
-        //el.style.paddingTop = "10px";
     } else if (outputString.length === 10) {
         el.style.fontSize = "75px";
-        //el.style.paddingTop = "25px";
     } else if (outputString.length === 11) {
         el.style.fontSize = "70px";
-        //el.style.paddingTop = "30px";
-    } else {
-        el.style.fontSize = "10px";
+    } else { // length >= 12
+        el.style.fontSize = "65px";
     }
-    //el.style.paddingBottom = "0px"
+}
+
+// check if next input digit is allowed
+function allowOneMoreHit() {
+    // replace negative sign and decimal points to count number of digits less than 9
+    return ((currentValue + '').replace('-', '').replace('.', '').length >= 9) ? false : true;
+}
+
+function hit(clicked_id) {
+    if (allowOneMoreHit()) {
+        let neg = (currentValue < 0)? true : false;
+        currentValue = Math.abs(currentValue);
+        
+        if (Number.isInteger(currentValue)) {
+            currentValue = currentValue * 10 + parseInt(clicked_id);   
+        } else {
+            // find out number of decimal points d
+            let d = currentValue.toString().split(".")[1].length;
+            currentValue = parseFloat(currentValue) + parseFloat(Math.pow(10, -(d+1)) * parseInt(clicked_id));
+            currentValue = parseFloat(currentValue).toFixed(d+1);
+        }
+
+        currentValue = neg ? -(currentValue):currentValue;
+
+        printResult();
+    }
+
+    // if you hit any gray button (number or decimal), flip AC to C
+    if (currentValue) {
+        document.getElementById("AC").innerHTML = "C";
+    }
 }
 
 function hitClear() {
-    let el = document.getElementById("Output");
+    // if you hit AC button, flip AC button back to AC
+    document.getElementById("AC").innerHTML = "AC";
     currentValue = 0;
-    el.innerHTML = currentValue.toLocaleString();
-    el.style.fontSize = "100px";
-    el.style.paddingTop = "0px";
-    el.style.paddingBottom = "0px";
+    printResult();
+}
+
+function hitPMSign() {
+    currentValue = -(currentValue);
+    printResult();
+}
+
+function hitPercent() {
+    // find out number of decimal points d
+    let d = 0;
+    if (!Number.isInteger(currentValue)) {
+        d = currentValue.toString().split(".")[1].length;
+    }
+    // apply % and add 2 decimals to it
+    currentValue = parseFloat(currentValue*0.01).toFixed(d+2);
+    printResult();
+}
+
+function hitDiv() {
+    operand = currentValue;
+}
+
+function hitMulti() {
+
+}
+
+function hitMinus() {
+
+}
+
+function hitPlus() {
+
+}
+
+function hitEqual() {
+
 }
