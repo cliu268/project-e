@@ -5,6 +5,7 @@ const calculator = {
     operand1: null,
     operand2: null,
     isPrevKeyOp: false,
+    needDec: false,
 };
 
 const calButtons = document.querySelector('#Keyboard');
@@ -38,6 +39,9 @@ calButtons.addEventListener('click', e => {
 function printResult() {
     let el = document.getElementById("Output");
     calculator.outputString = Number(calculator.currentValue).toLocaleString('en-US', {maximumFractionDigits: 20}); 
+    if (calculator.needDec) {
+        calculator.outputString += '.';
+    }
     el.textContent = calculator.outputString;
     if (calculator.outputString.length <= 7) {
         el.style.fontSize = "100px";
@@ -61,16 +65,26 @@ function allowOneMoreHit() {
 }
 
 function hit(clicked_id) {
-    const {currentValue, outputString} = calculator;
+    const {currentValue, outputString, needDec} = calculator;
     if (allowOneMoreHit()) {
         let newValue = Math.abs(currentValue);
         let neg = (currentValue < 0)? true : false;
         
-        if (Number.isInteger(newValue)) {
+        if (clicked_id === '.') {
+            if (Number.isInteger(newValue)) {
+                calculator.needDec = true;
+                printResult();
+            }
+            return;
+        } else {
+            calculator.needDec = false;
+        }
+
+        if (Number.isInteger(newValue) && !needDec) {
             newValue = newValue * 10 + parseInt(clicked_id);   
         } else {
             // find out number of decimal points d
-            let d = outputString.split(".")[1].length;
+            let d = needDec? 0 : outputString.split(".")[1].length;
             newValue = parseFloat(newValue) + parseFloat(Math.pow(10, -(d+1)) * parseInt(clicked_id));
             newValue = parseFloat(newValue).toFixed(d+1);
         }
@@ -95,6 +109,7 @@ function hitClear() {
     calculator.operand1 = null;
     calculator.operand2 = null;
     calculator.isPrevKeyOp = false;
+    calculator.needDec = false;
     printResult();
 }
 
@@ -129,7 +144,11 @@ function hitOp(target) {
         calculator.operand1 = calculator.currentValue;
     } else if (target.value === 'equal'|| !isPrevKeyOp) {
         // need to compute when equal is hit
-        compute(operand1, operator, operand2);
+        if (calculator.operand2 === null) {
+            calculator.operand2 = calculator.currentValue;
+        }
+        compute(operand1, operator, calculator.operand2);
+        calculator.operand1 = calculator.currentValue;
     } else if (operand2 !== null) {
         if (calculator.operator !== target.value && target.value !== 'add' && target.value !== 'subtract') {
             // need to recompute display value think of key seq '1+2+x'
@@ -139,6 +158,7 @@ function hitOp(target) {
                 compute(operand1, 'add', operand2);
             }
         } else {
+            calculator.operand2 = calculator.currentValue;
             //compute();
         }
     }
@@ -172,6 +192,7 @@ function hitOp(target) {
 }
 
 function compute(op1, op, op2) {
+    console.log(op1, op, op2);
     if (op2 === null) {
         op2 = calculator.currentValue;
     }
