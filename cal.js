@@ -1,11 +1,14 @@
 const calculator = {
     outputString: '0',
     currentValue: 0,
-    operator: null,
+    operator1: null,
+    operator2: null,
     operand1: null,
     operand2: null,
     isPrevKeyOp: false,
     needDec: false,
+    numZero: 0,
+    negZero: false,
 };
 
 const calButtons = document.querySelector('#Keyboard');
@@ -29,6 +32,10 @@ calButtons.addEventListener('click', e => {
         default: // this would be digit or decimal point
             if (calculator.isPrevKeyOp) {
                 calculator.currentValue = 0;
+                calculator.outputString = '0';
+                calculator.needDec = false;
+                calculator.numZero = 0;
+                calculator.negZero = false;
             }    
             hit(e.target.id);
             calculator.isPrevKeyOp = false;
@@ -38,9 +45,16 @@ calButtons.addEventListener('click', e => {
 
 function printResult() {
     let el = document.getElementById("Output");
-    calculator.outputString = Number(calculator.currentValue).toLocaleString('en-US', {maximumFractionDigits: 20}); 
-    if (calculator.needDec) {
+    //calculator.outputString = Number(calculator.currentValue).toLocaleString('en-US', {maximumFractionDigits: 20}); 
+    calculator.outputString = (parseFloat(Number(calculator.currentValue).toFixed(8))).toLocaleString('en-US', {maximumFractionDigits: 8});     
+    if (calculator.needDec || (calculator.numZero && !calculator.outputString.includes('.'))) {
         calculator.outputString += '.';
+    }
+    for (let i = calculator.numZero; i > 0; i--) {
+        calculator.outputString += '0';
+    }
+    if (calculator.negZero) {
+        calculator.outputString = '-' + calculator.outputString;
     }
     el.textContent = calculator.outputString;
     if (calculator.outputString.length <= 7) {
@@ -58,6 +72,17 @@ function printResult() {
     }
 }
 
+function resetActionButtons(action) {
+    let actionButtons = document.getElementsByClassName('right');
+    for (let button of actionButtons) {
+        if (button.value === action && 'equal' !== action) {
+            button.setAttribute("style", "color:darkorange; background-color:white");
+        } else {
+            button.setAttribute("style", "color:white; background-color:darkorange");
+        }
+    }
+}
+
 // check if next input digit is allowed
 function allowOneMoreHit() {
     // replace negative sign and decimal points to count number of digits less than 9
@@ -65,39 +90,45 @@ function allowOneMoreHit() {
 }
 
 function hit(clicked_id) {
-    const {currentValue, outputString, needDec} = calculator;
+    const {currentValue, outputString, needDec, numZero} = calculator;
     if (allowOneMoreHit()) {
         let newValue = Math.abs(currentValue);
         let neg = (currentValue < 0)? true : false;
         
+        // if you hit 0 we need to handle cases like 1.2000 cases differently
+        if (clicked_id === '0' && outputString.includes('.')) {
+            calculator.numZero += 1;
+        } else if (clicked_id !== '.') {
+            calculator.numZero = 0;
+        }
+        // if you hit '.' we need to print decimal if no dot yet but don't recompute value
         if (clicked_id === '.') {
-            if (Number.isInteger(newValue)) {
+            if (outputString.endsWith('.') || !outputString.includes('.')) {
                 calculator.needDec = true;
-                printResult();
             }
-            return;
         } else {
             calculator.needDec = false;
         }
-
-        if (Number.isInteger(newValue) && !needDec) {
-            newValue = newValue * 10 + parseInt(clicked_id);   
-        } else {
-            // find out number of decimal points d
-            let d = needDec? 0 : outputString.split(".")[1].length;
-            newValue = parseFloat(newValue) + parseFloat(Math.pow(10, -(d+1)) * parseInt(clicked_id));
-            newValue = parseFloat(newValue).toFixed(d+1);
+        // do not recompute if you hit '.'
+        if (clicked_id !== '.') {
+            if (Number.isInteger(newValue) && !needDec && !numZero) {
+                newValue = newValue * 10 + parseInt(clicked_id);   
+            } else {
+                // find out number of decimal points d
+                let d = needDec? 0 : outputString.split(".")[1].length;
+                newValue = parseFloat(newValue) + parseFloat(Math.pow(10, -(d+1)) * parseInt(clicked_id));
+                newValue = parseFloat(newValue).toFixed(d+1);
+            }
+            calculator.currentValue = neg ? -(newValue):newValue;
         }
-
-        calculator.currentValue = neg ? -(newValue):newValue;
-
         printResult();
     }
 
     // if you hit any gray button (number or decimal), flip AC to C
-    if (calculator.currentValue) {
+    if (calculator.currentValue || clicked_id === '.') {
         document.getElementById("AC").textContent = "C";
     }
+    resetActionButtons(null);
 }
 
 function hitClear() {
@@ -105,16 +136,23 @@ function hitClear() {
     document.getElementById("AC").textContent = "AC";
     calculator.currentValue = 0;
     calculator.outputString = '0';
-    calculator.operator = null;
+    calculator.operator1 = null;
+    calculator.operator2 = null;
     calculator.operand1 = null;
     calculator.operand2 = null;
     calculator.isPrevKeyOp = false;
     calculator.needDec = false;
+    calculator.numZero = 0;
+    calculator.negZero = false;
     printResult();
+    resetActionButtons(null);
 }
 
 function hitPMSign() {
     calculator.currentValue = -(calculator.currentValue);
+    if (calculator.currentValue === 0) {
+        calculator.negZero = !calculator.negZero;
+    }
     printResult();
 }
 
@@ -129,64 +167,60 @@ function hitPercent() {
 }
 
 function hitOp(target) {
-    const {currentValue, operand1, operand2, operator, isPrevKeyOp} = calculator;
-    // set action buttons color
-    let actionButtons = document.getElementsByClassName('right');
-    for (let button of actionButtons) {
-        if (button.value === target.value && target.value !== 'equal') {
-            button.setAttribute("style", "color:darkorange; background-color:white");
-        } else {
-            button.setAttribute("style", "color:white; background-color:darkorange");
-        }
-    }
+    const {currentValue, operand1, operand2, operator1, operator2, isPrevKeyOp} = calculator;
 
-    if (operator === null) {
+    // set action buttons color
+    resetActionButtons(target.value);
+
+    if (operator1 === null) {
         calculator.operand1 = calculator.currentValue;
     } else if (target.value === 'equal'|| !isPrevKeyOp) {
         // need to compute when equal is hit
         if (calculator.operand2 === null) {
             calculator.operand2 = calculator.currentValue;
         }
-        compute(operand1, operator, calculator.operand2);
-        calculator.operand1 = calculator.currentValue;
-    } else if (operand2 !== null) {
-        if (calculator.operator !== target.value && target.value !== 'add' && target.value !== 'subtract') {
+        // if you hit + or - following a number, compute first
+        if (target.value === 'add' || target.value === 'subtract') {
+            calculator.operand2 = calculator.currentValue;            
+            compute(operand1, operator1, calculator.operand2);
+            calculator.operand1 = calculator.currentValue;
+            calculator.operand2 = calculator.currentValue;
+        } else if (target.value == 'multiply' || target.value === 'divide') {
+            calculator.operand2 = calculator.currentValue; 
             // need to recompute display value think of key seq '1+2+x'
-            if (operator === 'add') {
+            if (operator1 === 'add') {
+                compute(operand1, 'subtract', calculator.operand2);
+            } else if (operator1 === 'subtract') {
+                compute(operand1, 'add', calculator.operand2);
+            } else { // multiply or divide
+                compute(operand1, operator1, calculator.operand2);
+            }
+            calculator.operand1 = calculator.currentValue;
+            calculator.operand2 = calculator.currentValue;            
+        } else { // target.value === 'equal'
+            if (!isPrevKeyOp) {
+                calculator.operand2 = calculator.currentValue;
+            }
+            compute(operand1, operator1, calculator.operand2);
+            calculator.operand1 = calculator.currentValue;
+        }
+    } else if (operand2 !== null) {
+        if (calculator.operator1 !== target.value && target.value !== 'add' && target.value !== 'subtract') {
+            // need to recompute display value think of key seq '1+2+x'
+            if (operator1 === 'add') {
                 compute(operand1, 'subtract', operand2);
-            } else if (operator === 'subtract') {
+            } else if (operator1 === 'subtract') {
                 compute(operand1, 'add', operand2);
             }
-        } else {
+        } else { // ????this part is still wrong??????
+            // case: '1+2=.3=' ==> 3.3 or 2.3 ?? 
             calculator.operand2 = calculator.currentValue;
             //compute();
         }
     }
 
-    // switch (target.value) {
-    //     case 'divide':
-    //         // compute and update display if all exist
-    //         if (operand2 !== null) {
-    //             if (operator === 'multiply' || operator === 'divide') {
-    //                 compute(operand1, operator, operand2);
-    //             } else if (operator === 'add' || operator === 'subtract') {
-
-    //             }
-    //         }
-    //         break;
-    //     case 'multiply':
-    //         break;
-    //     case 'subtract':
-    //         break;
-    //     case 'add':
-    //         break;
-    //     case 'equal':
-    //         break;
-    //     default:
-    //         break;
-    // }
     if (target.value !== 'equal') {
-        calculator.operator = target.value;
+        calculator.operator1 = target.value;
     }
     calculator.isPrevKeyOp = true;
 }
@@ -198,22 +232,54 @@ function compute(op1, op, op2) {
     }
     switch (op) {
         case 'divide':
-            calculator.currentValue = op1/op2;
+            calculator.currentValue = (Number(op1)/Number(op2)).toFixed(8);
             break;
         case 'multiply':
-            calculator.currentValue = op1*op2;
+            calculator.currentValue = (Number(op1)*Number(op2)).toFixed(8);
             break;
         case 'subtract':
-            calculator.currentValue = op1-op2;
+            calculator.currentValue = (Number(op1)-Number(op2)).toFixed(8);
             break;
         case 'add':
-            calculator.currentValue = op1+op2;
+            calculator.currentValue = (Number(op1)+Number(op2)).toFixed(8);
             break;
         case 'equal':
-            calculator.currentValue = calculator.operand1 = compute(op1, calculator.operator, op2);
+            compute(op1, calculator.operator1, op2);
+            calculator.operand1 = calculator.currentValue;
             break;
         default:
             break;
     }
+    calculator.needDec = false;
+    calculator.numZero = 0;
+    calculator.negZero = false;
     printResult();
 }
+
+// test cases:
+// '1234567890PM' ==> show -123,456,789
+// '0PM' ==> show -0
+// '0.000000PM' ==> show -0.000000
+// '.2xPM' ==> show -0  (*****)
+// '0.' ==> show 0.
+// '.10' ==> show 0.10
+// '1.0' ==> show 1.0
+// '1.02' ==> show 1.02 
+// '1.0.' ==> show 1.0
+// '1.0PM2' ==> show -1.02
+// '1.0PM+' ==> show -1.0
+// '1.0PM++' ==> show -1 (**-1.0)
+// '1.0====' ==> show 1.0
+// '1+2+3=' ==> show 6
+// '1+2+3+' ==> show 6
+// '1+2+3+4=' ==> show 10
+// '1+2+3+4+' ==> show 10 
+// '1+2+3+4+=' ==> show 20
+// '1+2==' ==> 5
+// '1+2+==' ==> 9
+// '1+2+3+4=+=' ==> show 20
+// '2x3==' ==> 18
+// '2x3x=' ==> 36
+// '1+2x3=' ==> 7 (**)
+// '1+2+x3=' ==> 7 (when x is hit, display reverts from 3 to 2) (**)
+// '1+2=.3=' ==> 3.3 ?? iphone shows 2.3 
