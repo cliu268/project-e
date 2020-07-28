@@ -5,6 +5,7 @@ const calculator = {
     operator2: null,
     operand1: null,
     operand2: null,
+    operand3: null,
     isPrevKeyOp: false,
     needDec: false,
     numZero: 0,
@@ -140,6 +141,7 @@ function hitClear() {
     calculator.operator2 = null;
     calculator.operand1 = null;
     calculator.operand2 = null;
+    calculator.operand3 = null;
     calculator.isPrevKeyOp = false;
     calculator.needDec = false;
     calculator.numZero = 0;
@@ -167,17 +169,19 @@ function hitPercent() {
 }
 
 function hitOp(target) {
-    const {currentValue, operand1, operand2, operator1, operator2, isPrevKeyOp} = calculator;
+    const {currentValue, operand1, operand2, operand3, operator1, operator2, isPrevKeyOp} = calculator;
 
     // set action buttons color
     resetActionButtons(target.value);
 
     if (operator1 === null) {
-        calculator.operand1 = calculator.currentValue;
+        calculator.operand1 = currentValue;
     } else if (target.value === 'equal'|| !isPrevKeyOp) {
         // need to compute when equal is hit
-        if (calculator.operand2 === null) {
-            calculator.operand2 = calculator.currentValue;
+        if (operand2 === null) {
+            calculator.operand2 = currentValue;
+        } else if (operator2 !== null && operand3 === null) {
+            calculator.operand3 = currentValue;
         }
         // if you hit + or - following a number, compute first
         if (target.value === 'add' || target.value === 'subtract') {
@@ -185,23 +189,32 @@ function hitOp(target) {
             compute(operand1, operator1, calculator.operand2);
             calculator.operand1 = calculator.currentValue;
             calculator.operand2 = calculator.currentValue;
-        } else if (target.value == 'multiply' || target.value === 'divide') {
-            calculator.operand2 = calculator.currentValue; 
+        } else if (target.value == 'multiply' || target.value === 'divide') { 
             // need to recompute display value think of key seq '1+2+x'
-            if (operator1 === 'add') {
-                compute(operand1, 'subtract', calculator.operand2);
-            } else if (operator1 === 'subtract') {
-                compute(operand1, 'add', calculator.operand2);
+            if (operator1 === 'add' || operator1 === 'subtract') {
+                calculator.operator2 = target.value;
             } else { // multiply or divide
+                calculator.operand2 = calculator.currentValue;
                 compute(operand1, operator1, calculator.operand2);
+                calculator.operand1 = calculator.currentValue;
+                calculator.operand2 = calculator.currentValue;                            
             }
-            calculator.operand1 = calculator.currentValue;
-            calculator.operand2 = calculator.currentValue;            
         } else { // target.value === 'equal'
             if (!isPrevKeyOp) {
-                calculator.operand2 = calculator.currentValue;
+                if (operator2 === null) {
+                    calculator.operand2 = currentValue;
+                    compute(operand1, operator1, calculator.operand2);
+                } else {
+                    //calculator.operand3 = currentValue;
+                    compute(operand2, operator2, currentValue);
+                    compute(operand1, operator1, calculator.currentValue);
+                    calculator.operator1 = operator2;
+                    calculator.operator2 = null;
+                    calculator.operand2 = operand3;
+                }
+            } else {
+                compute(operand1, operator1, calculator.operand2);
             }
-            compute(operand1, operator1, calculator.operand2);
             calculator.operand1 = calculator.currentValue;
         }
     } else if (operand2 !== null) {
@@ -219,7 +232,7 @@ function hitOp(target) {
         }
     }
 
-    if (target.value !== 'equal') {
+    if (target.value !== 'equal' && calculator.operator2 === null) {
         calculator.operator1 = target.value;
     }
     calculator.isPrevKeyOp = true;
@@ -280,6 +293,7 @@ function compute(op1, op, op2) {
 // '1+2+3+4=+=' ==> show 20
 // '2x3==' ==> 18
 // '2x3x=' ==> 36
-// '1+2x3=' ==> 7 (**)
+// '1+2x3=' ==> 7
+// '1+2x3==' ==> 21 (**)
 // '1+2+x3=' ==> 7 (when x is hit, display reverts from 3 to 2) (**)
 // '1+2=.3=' ==> 3.3 ?? iphone shows 2.3 
